@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 21f0df60c3b98894b9e52192762cbd63
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154375
+  packageName: Connect - Game Template
+  packageVersion: 1.3.3
+  assetPath: Assets/Ilumisoft/Connect/Assets/Scripts/Game/UI/MoveCounter.cs
+  uploadId: 520370

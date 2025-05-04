@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3a1a9792794029c4ea49544d39ffb9a1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154375
+  packageName: Connect - Game Template
+  packageVersion: 1.3.3
+  assetPath: Assets/Ilumisoft/Connect/Assets/Timelines/Highscore Message.playable
+  uploadId: 520370

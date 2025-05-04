@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0a10687503d65434686d5f53ad4ebca8
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 24100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154375
+  packageName: Connect - Game Template
+  packageVersion: 1.3.3
+  assetPath: Assets/Ilumisoft/Connect/Assets/AudioMixers/Audio Mixer.mixer
+  uploadId: 520370

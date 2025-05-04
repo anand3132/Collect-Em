@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f114712466c58ca4e82c52dfa6e5ab8c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 154375
+  packageName: Connect - Game Template
+  packageVersion: 1.3.3
+  assetPath: Assets/Ilumisoft/Connect/Assets/Scripts/Game/Grid/GameGridExtensions.cs
+  uploadId: 520370
