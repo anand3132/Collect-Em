@@ -172,6 +172,31 @@
             return element.Color == this.selectionLine.Color;
         }
 
+        public Vector3 GetSelectionCenterPosition()
+        {
+            if (SelectedElements == null || SelectedElements.Count == 0)
+                return Vector3.zero;
+
+            Vector3 center = Vector3.zero;
+            foreach (var element in SelectedElements)
+            {
+                center += element.transform.position;
+            }
+            return center / SelectedElements.Count;
+        }
+
+        public Vector2Int GetSelectionGridCenter()
+        {
+            if (SelectedElements == null || SelectedElements.Count == 0)
+                return Vector2Int.zero;
+
+            Vector2Int center = Vector2Int.zero;
+            foreach (var element in SelectedElements)
+            {
+                center += grid.GetGridPosition(element);
+            }
+            return center / SelectedElements.Count;
+        }
         /// <summary>
         /// Returns true if the given element is adjacent to the last element in the selection,
         /// false otherwise
@@ -227,6 +252,16 @@
         private bool IsValidInput()
         {
             return this.SelectedElements.Count >= grid.MatchMin ? true : false;
+        }
+        
+        private Vector3 GetMatchCenterPosition(List<GridElement> matchedElements)
+        {
+            Vector3 center = Vector3.zero;
+            foreach (var element in matchedElements)
+            {
+                center += element.transform.position;
+            }
+            return center / matchedElements.Count;
         }
     }
 }

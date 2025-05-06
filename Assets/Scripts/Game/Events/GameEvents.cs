@@ -1,4 +1,6 @@
 ﻿using UnityEngine.Events;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace RedGaintGames.CollectEM.Game
 {
@@ -8,28 +10,27 @@ namespace RedGaintGames.CollectEM.Game
     public class UnityIntEvent : UnityEvent<int> { }
 
     /// <summary>
-    /// UnityEvent with two integer arguments, used to broadcast changes to the score
+    /// UnityEvent with two integer arguments
     /// </summary>
     public class ScoreChangedEvent : UnityEvent<int, int> { }
+
+    /// <summary>
+    /// UnityEvent with score data for animations
+    /// </summary>
+    public class ScoreAnimationEvent : UnityEvent<int, List<Vector3>> { }
 
     /// <summary>
     /// Static class holding all relevant game events
     /// </summary>
     public static class GameEvents
     {
-        /// <summary>
-        /// Event that is fired when bubbles are despawned
-        /// </summary>
+        // Existing Events
         public static UnityIntEvent OnElementsDeSpawned { get; } = new UnityIntEvent();
-
-        /// <summary>
-        /// Event that is fired when the selection of bubbles has changed
-        /// </summary>
         public static UnityIntEvent OnSelectionChanged { get; } = new UnityIntEvent();
-
-        /// <summary>
-        /// Event that is fired when the score has changed
-        /// </summary>
         public static ScoreChangedEvent OnScoreChanged { get; } = new ScoreChangedEvent();
+
+        // New Events for Score Animation
+        public static ScoreAnimationEvent OnScoreAnimationRequested { get; } = new ScoreAnimationEvent();
+        public static UnityEvent OnScoreReachedCounter { get; } = new UnityEvent();
     }
 }

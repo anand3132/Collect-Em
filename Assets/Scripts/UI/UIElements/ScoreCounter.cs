@@ -1,41 +1,64 @@
-﻿namespace RedGaintGames.CollectEM.Game
-{
-    using System.Collections;
-    using UnityEngine;
-    using UnityEngine.UI;
+﻿using TMPro;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
 
-    /// <summary>
-    /// UI Behaviour, displaying the current score of the player
-    /// </summary>
+namespace RedGaintGames.CollectEM.Game
+{
     public class ScoreCounter : MonoBehaviour
     {
-        [SerializeField] private Text text = null;
+        [SerializeField] private TextMeshProUGUI text;
+        [SerializeField] private float countDuration = 0.5f;
+        [SerializeField] private float punchScale = 1.2f;
+        [SerializeField] private float punchDuration = 0.3f;
 
-        /// <summary>
-        /// Listen to score changed events
-        /// </summary>
-        private void OnEnable()
+        private Vector3 originalScale;
+
+        private void Awake()
         {
+            originalScale = text.transform.localScale;
             GameEvents.OnScoreChanged.AddListener(OnScoreChanged);
         }
 
-        /// <summary>
-        /// Stop listening to score changed events
-        /// </summary>
-        private void OnDisable()
+        private void OnDestroy()
         {
             GameEvents.OnScoreChanged.RemoveListener(OnScoreChanged);
         }
 
-        /// <summary>
-        /// Gets called when the score has been changed
-        /// </summary>
-        /// <param name="oldScore"></param>
-        /// <param name="newScore"></param>
         private void OnScoreChanged(int oldScore, int newScore)
         {
-            StopAllCoroutines();
-            StartCoroutine(UpdateTextCoroutine(oldScore, newScore, 1.0f));
+            StartCoroutine(AnimateScoreChange(oldScore, newScore));
+        }
+
+        private IEnumerator AnimateScoreChange(int from, int to)
+        {
+            // Wait for score popup to reach counter
+            yield return new WaitForSeconds(0.8f);
+
+            float elapsed = 0f;
+            while (elapsed < countDuration)
+            {
+                float t = elapsed / countDuration;
+                int currentValue = (int)Mathf.Lerp(from, to, t);
+                text.text = currentValue.ToString();
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            text.text = to.ToString();
+
+            // Punch effect
+            elapsed = 0f;
+            while (elapsed < punchDuration)
+            {
+                float t = elapsed / punchDuration;
+                float scale = Mathf.Lerp(punchScale, 1f, t);
+                text.transform.localScale = originalScale * scale;
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            text.transform.localScale = originalScale;
         }
 
         /// <summary>
@@ -67,5 +90,6 @@
 
             this.text.text = to.ToString();
         }
+
     }
 }

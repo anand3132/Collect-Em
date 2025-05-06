@@ -11,7 +11,7 @@ namespace RedGaintGames.CollectEM.Game
     public class GameManager : Singleton<GameManager>
     {
         [Header("Game Configuration")]
-        [SerializeField] private Grid grid;
+        [SerializeField] public Grid grid;
         [SerializeField] private int movesAvailable = 20;
         [SerializeField] private bool powerUpsEnabled = false;
         public GridDesignerUI GridDesignerUI;
@@ -25,6 +25,12 @@ namespace RedGaintGames.CollectEM.Game
         private PowerUpSystem powerUpSystem;
 
         private void OnEnable() => GameEvents.OnElementsDeSpawned.AddListener(OnElementsDespawned);
+
+        private void OnElementsDespawned(int arg0, List<GridElement> arg1)
+        {
+            
+        }
+
         private void OnDisable() => GameEvents.OnElementsDeSpawned.RemoveListener(OnElementsDespawned);
 
 

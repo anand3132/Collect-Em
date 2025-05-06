@@ -18,7 +18,7 @@
         [SerializeField] private int matchMinimum = 3;
         [SerializeField] private List<Color> colors = new List<Color>();
 
-        private GridInput gridInput;
+        public  GridInput gridInput;
         private GridMovement gridMovement;
         private GridSpawning gridSpawning;
 
