@@ -1,75 +1,92 @@
-﻿namespace RedGaintGames.CollectEM.Game
-{
-    using CollectEM.Core.Extensions;
-    using UnityEngine;
+﻿using RedGaintGames.CollectEM.Core.Extensions;
+using UnityEngine;
 
+namespace RedGaintGames.CollectEM.Game
+{
     /// <summary>
-    /// An elements  in the grid
+    /// Represents a single tile or element in the grid.
+    /// Handles visual behavior such as movement, spawn/despawn animations, and appearance.
     /// </summary>
     public class GridElement : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer spriteRenderer = null;
+        [SerializeField] private SpriteRenderer spriteRenderer = null; // Renders the visual sprite of the grid element
+        private IGridElementSettings settings; // Settings for spawn/despawn animation durations and scale
 
         /// <summary>
-        /// Gets whether the element is moving or not
+        /// Whether the element is currently moving.
         /// </summary>
         public bool IsMoving { get; private set; }
 
         /// <summary>
-        /// Returns whether the element is active or not
+        /// Whether the element is currently active (spawned) in the scene.
         /// </summary>
-        public bool IsSpawned => this.gameObject.activeSelf;
+        public bool IsSpawned => gameObject.activeSelf;
 
         /// <summary>
-        /// Gets or sets the color of the element
+        /// Color of the grid element, forwarded to its SpriteRenderer.
         /// </summary>
         public Color Color
         {
-            get { return this.spriteRenderer.color; }
-            set { this.spriteRenderer.color = value; }
+            get => spriteRenderer.color;
+            set => spriteRenderer.color = value;
         }
 
         /// <summary>
-        /// Moves the elements to the given target position (world coordinates)
-        /// in the given time
+        /// Initializes the grid element with provided settings or default values.
         /// </summary>
-        /// <param name="targetPos"></param>
-        /// <param name="time"></param>
+        /// <param name="settings">Optional animation settings. Uses default if null.</param>
+        public void Initialize(IGridElementSettings settings = null)
+        {
+            this.settings = settings ?? new DefaultElementSettings();
+        }
+
+        /// <summary>
+        /// Moves the element to a target position over time with a coroutine.
+        /// </summary>
+        /// <param name="targetPos">Destination world position.</param>
+        /// <param name="time">Time to complete the movement.</param>
         public void Move(Vector3 targetPos, float time)
         {
-            this.IsMoving = true;
-
-            StartCoroutine(this.transform.MoveCoroutine(targetPos, time, () =>
+            IsMoving = true;
+            StartCoroutine(transform.MoveCoroutine(targetPos, time, () =>
             {
-                this.IsMoving = false;
+                IsMoving = false;
             }));
         }
 
         /// <summary>
-        /// Activates the element and plays its spawn animation
+        /// Activates and visually spawns the element using a scaling animation.
         /// </summary>
         public void Spawn()
         {
-            this.gameObject.SetActive(true);
-
-            Vector2 startScale = Vector2.one * 0.1f;
-            Vector2 endScale = Vector2.one * 1.0f;
-
-            StartCoroutine(this.transform.ScaleCoroutine(startScale, endScale, 0.25f));
+            gameObject.SetActive(true);
+            Vector2 startScale = Vector2.one * settings.SpawnStartScale;
+            Vector2 endScale = Vector2.one;
+            StartCoroutine(transform.ScaleCoroutine(startScale, endScale, settings.SpawnAnimationDuration));
         }
 
         /// <summary>
-        /// Plays the despawn animation and deactivates the element afterwards
+        /// Plays a scaling animation to "shrink" the element and disables the game object.
         /// </summary>
         public void Despawn()
         {
-            Vector2 startScale = Vector2.one * 1.0f;
-            Vector2 endScale = Vector2.one * 0.1f;
-
-            StartCoroutine(this.transform.ScaleCoroutine(startScale, endScale, 0.25f, () =>
+            Vector2 startScale = Vector2.one;
+            Vector2 endScale = Vector2.one * settings.DespawnEndScale;
+            StartCoroutine(transform.ScaleCoroutine(startScale, endScale, settings.DespawnAnimationDuration, () =>
             {
-                this.gameObject.SetActive(false);
+                gameObject.SetActive(false);
             }));
+        }
+
+        /// <summary>
+        /// Default implementation of IGridElementSettings for fallback animation values.
+        /// </summary>
+        private class DefaultElementSettings : IGridElementSettings
+        {
+            public float SpawnAnimationDuration => 0.25f;
+            public float DespawnAnimationDuration => 0.25f;
+            public float SpawnStartScale => 0.1f;
+            public float DespawnEndScale => 0.1f;
         }
     }
 }

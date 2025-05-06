@@ -52,5 +52,20 @@
         {
             return grid.ColumnCount * gridPos.y + gridPos.x;
         }
+        
+        public static Vector2Int GridPositionForElement(this Grid grid, GridElement element)
+        {
+            for (int y = 0; y < grid.RowCount; y++)
+            {
+                for (int x = 0; x < grid.ColumnCount; x++)
+                {
+                    if (grid.GetElement(x, y) == element)
+                    {
+                        return new Vector2Int(x, y);
+                    }
+                }
+            }
+            return Vector2Int.zero;
+        }
     }
 }

@@ -1,62 +1,76 @@
-﻿namespace RedGaintGames.CollectEM.Game
-{
-    using CollectEM.Core.Extensions;
-    using System.Collections;
-    using System.Collections.Generic;
-    using UnityEngine;
+﻿using RedGaintGames.CollectEM.Core.Extensions;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
-    /// <summary>
-    /// Despawns and respawns elements in the game grid
-    /// </summary>
+namespace RedGaintGames.CollectEM.Game
+{
     public class GridSpawning
     {
-        private Grid grid;
+        private readonly Grid grid;
+        private readonly IGridSpawningSettings settings;
 
-        public GridSpawning(Grid grid)
+        public GridSpawning(Grid grid, IGridSpawningSettings settings = null)
         {
             this.grid = grid;
+            this.settings = settings ?? new DefaultSpawningSettings();
+            if(settings==null)
+                Debug.Log("Default DefaultSpawningSettings  settings");
         }
 
-        /// <summary>
-        /// Respawns all despawned elements
-        /// </summary>
-        /// <returns></returns>
         public IEnumerator RespawnElements()
         {
             GameSFX.Instance.Play(GameSFX.Instance.SpawnClip);
+            bool anyRespawned = false;
 
-            foreach (GridElement element in this.grid.Elements)
+            foreach (GridElement element in grid.Elements)
             {
-                if (element.IsSpawned == false)
+                if (!element.IsSpawned)
                 {
-                    element.Color = this.grid.Colors.GetRandom();
-
+                    element.Color = grid.Colors.GetRandom();
                     element.Spawn();
+                    anyRespawned = true;
                 }
             }
 
-            yield return new WaitForSeconds(0.4f);
+            if (anyRespawned)
+            {
+                yield return new WaitForSeconds(settings.RespawnDelay);
+            }
         }
 
-        /// <summary>
-        /// Despawns the given list of elements
-        /// </summary>
-        /// <param name="elements"></param>
-        /// <returns></returns>
         public IEnumerator Despawn(List<GridElement> elements)
         {
-            GameSFX.Instance.Play(GameSFX.Instance.DespawnClip);
+            if (elements == null || elements.Count == 0)
+                yield break;
 
-            foreach (GridElement gridElement in elements)
+            GameSFX.Instance.Play(GameSFX.Instance.DespawnClip);
+            int validElements = 0;
+
+            foreach (GridElement element in elements)
             {
-                gridElement.Despawn();
+                if (element != null && element.IsSpawned)
+                {
+                    element.Despawn();
+                    validElements++;
+                }
             }
 
-            yield return new WaitForSeconds(0.4f);
+            if (validElements > 0)
+            {
+                yield return new WaitForSeconds(settings.DespawnDelay);
+                GameManager.Instance.MovesAvailable--;
+                GameEvents.OnElementsDeSpawned.Invoke(validElements);
+            }
+        }
 
-            GameManager.Instance.MovesAvailable--;
-
-            GameEvents.OnElementsDeSpawned.Invoke(elements.Count);
+        // Default implementation
+        private class DefaultSpawningSettings : IGridSpawningSettings
+        {
+            public float RespawnDelay => 0.4f;
+            public float DespawnDelay => 0.4f;
         }
     }
 }

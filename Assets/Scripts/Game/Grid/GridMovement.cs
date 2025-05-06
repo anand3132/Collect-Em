@@ -1,92 +1,68 @@
-﻿namespace RedGaintGames.CollectEM.Game
-{
-    using System.Collections;
-    using UnityEngine;
+﻿// GridMovement.cs
+using System.Collections;
+using UnityEngine;
 
-    /// <summary>
-    /// Performs the animated movement of elements in the game grid
-    /// </summary>
+namespace RedGaintGames.CollectEM.Game
+{
     public class GridMovement
     {
-        private Grid grid;
+        private readonly Grid grid;
+        private readonly IGridMovementSettings settings;
 
-        public GridMovement(Grid grid)
+        public GridMovement(Grid grid, IGridMovementSettings settings = null)
         {
             this.grid = grid;
+            this.settings = settings ?? new DefaultMovementSettings();
+            if(settings==null)
+                Debug.Log("Default movement settings");
         }
 
-        /// <summary>
-        /// Moves all elements downwards if there are empty cells below them and 
-        /// waits for their movement to be finished
-        /// </summary>
-        /// <returns></returns>
         public IEnumerator WaitForMovement()
         {
             MoveElements();
 
-            while (IsMovementDone() == false)
+            while (!IsMovementDone())
             {
-                yield return new WaitForSeconds(0.05f);
+                yield return new WaitForSeconds(settings.MovementCheckInterval);
             }
-
-            yield break;
+            
         }
 
-        /// <summary>
-        /// Returns true if no element is moving, false otherwise
-        /// </summary>
-        /// <returns></returns>
         private bool IsMovementDone()
         {
-            foreach (GridElement element in this.grid.Elements)
+            foreach (GridElement element in grid.Elements)
             {
                 if (element.IsSpawned && element.IsMoving)
                 {
                     return false;
                 }
             }
-
             return true;
         }
 
-        /// <summary>
-        /// Moves elements downwards to fill gaps between cells 
-        /// </summary>
         private void MoveElements()
         {
-            //Run from bottom to top through all rows
-            for (int y = 0; y < this.grid.RowCount; y++)
+            for (int y = 0; y < grid.RowCount; y++)
             {
-                for (int x = 0; x < this.grid.ColumnCount; x++)
+                for (int x = 0; x < grid.ColumnCount; x++)
                 {
                     ProcessCell(x, y);
                 }
             }
         }
 
-        /// <summary>
-        /// Checks for the cell in the given row and column, whether it is not spawned.
-        /// If thats the case, the next spawned element above it, will move to its position.
-        /// </summary>
-        /// <param name="column"></param>
-        /// <param name="row"></param>
         private void ProcessCell(int column, int row)
         {
-            GridElement element = this.grid.GetElement(column, row);
+            GridElement element = grid.GetElement(column, row);
 
-            //Is the element not spawned? 
-            //=> Cell is empty and elements above should move downwards
-            if (element.IsSpawned == false)
+            if (!element.IsSpawned)
             {
-                //Move the next element above it down
-                for (int i = row + 1; i < this.grid.RowCount; i++)
+                for (int i = row + 1; i < grid.RowCount; i++)
                 {
-                    GridElement next = this.grid.GetElement(column, i);
-
+                    GridElement next = grid.GetElement(column, i);
                     if (next != null && next.IsSpawned && !next.IsMoving)
                     {
                         MoveElement(new Vector2Int(column, i), new Vector2Int(column, row));
-
                         return;
                     }
                 }
@@ -95,17 +71,25 @@
 
         private void MoveElement(Vector2Int oldPos, Vector2Int newPos)
         {
-            //Catch the elements of the two grid positions
-            GridElement element1 = this.grid.GetElement(oldPos.x, oldPos.y);
-            GridElement element2 = this.grid.GetElement(newPos.x, newPos.y);
+            GridElement element1 = grid.GetElement(oldPos.x, oldPos.y);
+            GridElement element2 = grid.GetElement(newPos.x, newPos.y);
 
-            //Switch them in the grid
-            this.grid.Elements[this.grid.GridPositionToIndex(oldPos)] = element2;
-            this.grid.Elements[this.grid.GridPositionToIndex(newPos)] = element1;
+            grid.Elements[grid.GridPositionToIndex(oldPos)] = element2;
+            grid.Elements[grid.GridPositionToIndex(newPos)] = element1;
 
-            //Update world positions
-            element2.transform.position = this.grid.GridToWorldPosition(oldPos);
-            element1.Move(this.grid.GridToWorldPosition(newPos), 0.4f);
+            element2.transform.position = grid.GridToWorldPosition(oldPos);
+            // Apply gravity multiplier to movement duration
+            float adjustedDuration = settings.ElementMoveDuration / settings.GravityMultiplier;
+            element1.Move(grid.GridToWorldPosition(newPos), adjustedDuration);        }
+
+        // Default implementation when no designer is provided
+        private class DefaultMovementSettings : IGridMovementSettings
+        {
+            public float MovementCheckInterval => 0.05f;
+            public float ElementMoveDuration => 0.4f;
+            public float PositionUpdateThreshold => 0.01f;
+            public float GravityMultiplier => 1f; // Default normal speed
         }
+
     }
 }

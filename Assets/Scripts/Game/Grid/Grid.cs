@@ -7,7 +7,7 @@
     /// <summary>
     /// The grid holding all elements/bubbles
     /// </summary>
-    public class Grid : MonoBehaviour
+    public class Grid : MonoBehaviour, IGridPositionProvider
     {
         [SerializeField] private SelectionLine selectionLine = null;
         [SerializeField] private GridElement gridElementPrefab = null;
@@ -66,11 +66,11 @@
         /// </summary>
         public int MatchMin => this.matchMinimum;
 
-        private void Awake()
+        private void Start()
         {
             this.gridInput = new GridInput(this, this.selectionLine);
-            this.gridMovement = new GridMovement(this);
-            this.gridSpawning = new GridSpawning(this);
+            this.gridMovement = new GridMovement(this,GameManager.Instance.GridDesignerUI);
+            this.gridSpawning = new GridSpawning(this,GameManager.Instance.GridDesignerUI);
         }
 
         /// <summary>
@@ -78,18 +78,24 @@
         /// </summary>
         public void GenerateGrid()
         {
+            // Get designer reference if available
+            // var designer = FindObjectOfType<GridDesignerUI>();
+    
             for (int y = 0; y < this.ColumnCount; y++)
             {
                 for (int x = 0; x < this.RowCount; x++)
                 {
                     GridElement element = Instantiate(this.gridElementPrefab);
 
+                    // Initialize with designer settings if available
+                    element.Initialize(GameManager.Instance.GridDesignerUI);
+
+                    // Set physical properties
                     element.transform.localScale = Vector2.one * this.cellSize;
-
                     element.transform.position = this.GridToWorldPosition(x, y);
-
                     element.transform.SetParent(this.GridContainer.transform, true);
-
+            
+                    // Set visual properties
                     element.Color = this.colors.GetRandom();
 
                     this.Elements.Add(element);
@@ -132,6 +138,46 @@
         public Coroutine DespawnSelection()
         {
             return StartCoroutine(this.gridSpawning.Despawn(this.gridInput.SelectedElements));
+        }
+        /// <summary>
+        /// Public access to grid input system
+        /// </summary>
+        public GridInput Input => gridInput;
+
+        /// <summary>
+        /// Despawns a list of elements (delegates to GridSpawning)
+        /// </summary>
+        public Coroutine Despawn(List<GridElement> elements)
+        {
+            return StartCoroutine(gridSpawning.Despawn(elements));
+        }
+
+        /// <summary>
+        /// Gets the world position for a grid coordinate (overload)
+        /// </summary>
+        public Vector2 GridToWorldPosition(Vector2Int gridPos)
+        {
+            return StartCellPosition + new Vector2(gridPos.x * CellSize, gridPos.y * CellSize);
+        }
+
+        /// <summary>
+        /// Gets the grid element at specified coordinates with bounds checking
+        /// </summary>
+        public GridElement GetElement(int x, int y)
+        {
+            if (x < 0 || x >= ColumnCount || y < 0 || y >= RowCount)
+                return null;
+            
+            return Elements[y * ColumnCount + x];
+        }
+
+        public Vector2Int GetGridPosition(GridElement element)
+        {
+            int index = Elements.IndexOf(element);
+            return new Vector2Int(
+                index % ColumnCount, 
+                index / ColumnCount
+            );
         }
     }
 }

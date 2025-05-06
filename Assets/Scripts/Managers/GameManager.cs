@@ -1,151 +1,183 @@
 ﻿using RedGaintGames.CollectEM.Core;
+using RedGaintGames.CollectEM.Game.PowerUps;
+using System.Collections;
+using System.Collections.Generic;
+using RedGaintGames.CollectEM.Game.Designer;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace RedGaintGames.CollectEM.Game
 {
-    using CollectEM;
-    using CollectEM.Core;
-    using System.Collections;
-    using UnityEngine;
-    using UnityEngine.UI;
-
-    /// <summary>
-    /// Handles the game flow
-    /// </summary>
     public class GameManager : Singleton<GameManager>
     {
-        [SerializeField]
-        private Button returnButton = null;
-
-        /// <summary>
-        /// The score of the player
-        /// </summary>
-        public static int Score { get; private set; }
-
-        /// <summary>
-        /// Reference to the game grid
-        /// </summary>
-        [SerializeField] private Grid grid = null;
-
-        /// <summary>
-        /// The number of moves the player has left
-        /// </summary>
+        [Header("Game Configuration")]
+        [SerializeField] private Grid grid;
         [SerializeField] private int movesAvailable = 20;
-
-        /// <summary>
-        /// Gets or sets the  number of moves the player has left
-        /// </summary>
-        public int MovesAvailable
-        {
-            get => this.movesAvailable;
-            set => this.movesAvailable = value;
+        [SerializeField] private bool powerUpsEnabled = false;
+        public GridDesignerUI GridDesignerUI;
+        public static int Score { get; private set; }
+        public int MovesAvailable { get; set; }
+        public bool PowerUpsEnabled {
+            get => powerUpsEnabled;
+            set => powerUpsEnabled = value; 
         }
 
-        /// <summary>
-        /// Start listening to relevant events
-        /// </summary>
-        private void OnEnable()
-        {
-            GameEvents.OnElementsDeSpawned.AddListener(OnElementsDespawned);
-        }
+        private PowerUpSystem powerUpSystem;
 
-        //Stop listening from all events
-        private void OnDisable()
-        {
-            GameEvents.OnElementsDeSpawned.RemoveListener(OnElementsDespawned);
-        }
+        private void OnEnable() => GameEvents.OnElementsDeSpawned.AddListener(OnElementsDespawned);
+        private void OnDisable() => GameEvents.OnElementsDeSpawned.RemoveListener(OnElementsDespawned);
 
-        /// <summary>
-        /// Starts and processes the game flow
-        /// </summary>
-        /// <returns></returns>
+
         private IEnumerator Start()
         {
-            if(returnButton)
-                this.returnButton.onClick.AddListener(OnBackButtonClick);
-
             InitializeGame();
-
-            //Wait for the game to be executed completely
             yield return StartCoroutine(RunGame());
-
-            //Wait for the game to finish
             yield return StartCoroutine(EndGame());
         }
 
-        /// <summary>
-        /// Returns to the menu scene
-        /// </summary>
-        protected void OnBackButtonClick()
-        {
-        }
-
-        /// <summary>
-        /// Check for escape button
-        /// </summary>
-        private void Update()
-        {
-            if (Input.GetKey(KeyCode.Escape))
-            {
-                OnBackButtonClick();
-            }
-        }
-
-        /// <summary>
-        /// Initilaizes the game and the grid
-        /// </summary>
-        public void InitializeGame()
+        private void InitializeGame()
         {
             Score = 0;
-
-            this.grid.GenerateGrid();
+            MovesAvailable = movesAvailable;
+    
+            // Configure your power-up rules
+            var powerUpRules = new List<PowerUpRule>
+            {
+                new PowerUpRule { MinimumElements = 4, PowerUpType = typeof(DoubleRocketPowerUp) },
+                new PowerUpRule { MinimumElements = 6, PowerUpType = typeof(BombPowerUp) }
+            };
+    
+            powerUpSystem = new PowerUpSystem();
+            powerUpSystem.Initialize(grid, powerUpRules);
+    
+            grid.GenerateGrid();
         }
-
-        /// <summary>
-        /// Runs the game loop
-        /// </summary>
-        /// <returns></returns>
         public IEnumerator RunGame()
         {
-            //Game Loop
-            while (this.MovesAvailable > 0)
+            while (MovesAvailable > 0)
             {
-                //Wait for the Player to select elements
-                yield return this.grid.WaitForSelection();
-
-                //Despawn selected elements
-                yield return this.grid.DespawnSelection();
-
-                //Wait for the grid elements to finish movement
-                yield return this.grid.WaitForMovement();
-
-                //Respawn despawned elements
-                yield return this.grid.RespawnElements();
+                yield return HandlePlayerMove();
+                yield return HandleChainReactions();
             }
         }
 
-        /// <summary>
-        /// Loads the game over scene
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator EndGame()
+        
+        // private IEnumerator HandlePlayerMove()
+        // {
+        //     yield return grid.WaitForSelection();
+        //
+        //     var selectedElements = grid.Input.SelectedElements;
+        //
+        //     if (powerUpSystem.TryGetPowerUp(selectedElements, out var powerUp))
+        //     {
+        //         // Power-up available
+        //         yield return powerUpSystem.ExecutePowerUp(powerUp);
+        //         MovesAvailable--;
+        //         yield return ProcessGravity(); // Handle any cascades
+        //     }
+        //     else
+        //     {
+        //         // Normal match
+        //         yield return grid.DespawnSelection();
+        //         MovesAvailable--;
+        //         yield return ProcessGravity();
+        //     }
+        //
+        //     // Always respawn after any match
+        //     yield return grid.RespawnElements();
+        //     yield return ProcessGravity();
+        // }
+        
+        
+        private IEnumerator HandlePlayerMove()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return grid.WaitForSelection();
 
+            var selectedElements = grid.Input.SelectedElements;
+            bool powerUpWasUsed = false;
+
+            // Power-up handling
+            if (powerUpsEnabled && selectedElements.Count >= 4 && 
+                powerUpSystem.TryGetPowerUp(selectedElements, out var powerUp))
+            {
+                yield return powerUp.Execute(); // Direct call without wrapper
+                powerUpWasUsed = true;
+        
+                // Power-ups handle their own post-processing
+                yield return ProcessGravity();
+            }
+            // Normal match handling
+            else
+            {
+                yield return grid.DespawnSelection();
+                MovesAvailable--;
+                yield return ProcessGravity();
+                yield return grid.RespawnElements();
+                yield return ProcessGravity();
+            }
         }
 
-        /// <summary>
-        /// Gets invoked when the user has finished its move and 
-        /// the selected elements are despawned
-        /// </summary>
-        /// <param name="count"></param>
+        // Example method to toggle power-ups from code
+        public void SetPowerupsEnabled(bool enabled)
+        {
+            powerUpsEnabled = enabled;
+            Debug.Log($"Power-ups {(enabled ? "enabled" : "disabled")}");
+        }
+        private IEnumerator HandleChainReactions()
+        {
+            do
+            {
+                yield return ProcessGravity();
+                yield return grid.RespawnElements();
+                yield return ProcessGravity();
+            } 
+            while (HasPotentialMatches());
+        }
+
+        private IEnumerator ProcessGravity()
+        {
+            bool needsMoreProcessing;
+            do
+            {
+                yield return grid.WaitForMovement();
+                needsMoreProcessing = CheckForFallingElements();
+            } 
+            while (needsMoreProcessing);
+        }
+
+        private bool CheckForFallingElements()
+        {
+            // Optimized version using grid array if available
+            for (int y = 1; y < grid.RowCount; y++) // Start from 1 since bottom row can't fall
+            {
+                for (int x = 0; x < grid.ColumnCount; x++)
+                {
+                    var element = grid.GetElement(x, y);
+                    if (element.IsSpawned && !element.IsMoving && 
+                        !grid.GetElement(x, y-1).IsSpawned)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool HasPotentialMatches()
+        {
+            // Implement match detection logic here
+            return false;
+        }
+
         private void OnElementsDespawned(int count)
         {
-            //Update score
-            int oldScore = Score;
-            Score = oldScore + count * (count - 1);
-
-            //Invoke score changed event
-            GameEvents.OnScoreChanged.Invoke(oldScore, Score);
+            int newScore = Score + count * (count - 1);
+            GameEvents.OnScoreChanged.Invoke(Score, newScore);
+            Score = newScore;
         }
+
+        private void OnBackButtonClick() { /* Implementation */ }
+        private IEnumerator EndGame() { yield return new WaitForSeconds(0.5f); }
+        private void Update() { if (Input.GetKey(KeyCode.Escape)) OnBackButtonClick(); }
     }
 }
