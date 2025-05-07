@@ -1,10 +1,12 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
+using System;
 
 namespace RedGaintGames.CollectEM.Game.Designer
 {
-    public class GridDesignerUI : MonoBehaviour, IGridMovementSettings, IGridSpawningSettings,IGridElementSettings
+    public class GridDesignerUI : MonoBehaviour, IGridMovementSettings, IGridSpawningSettings, IGridElementSettings
     {
         [Header("Movement Settings UI")]
         [SerializeField] private Slider checkIntervalSlider;
@@ -34,17 +36,6 @@ namespace RedGaintGames.CollectEM.Game.Designer
         [SerializeField] private TMP_Text gravityMultiplierText;
         [SerializeField] private float defaultGravityMultiplier = 1f;
 
-        // Add to interface implementation
-        public float GravityMultiplier { get; private set; }
-        // Movement Settings Implementation
-        public float MovementCheckInterval { get; private set; }
-        public float ElementMoveDuration { get; private set; }
-        public float PositionUpdateThreshold { get; private set; }
-
-        // Spawning Settings Implementation
-        public float RespawnDelay { get; private set; }
-        public float DespawnDelay { get; private set; }
-        
         [Header("Element Animation Settings")]
         [SerializeField] private Slider spawnDurationSlider;
         [SerializeField] private Slider despawnDurationSlider;
@@ -61,30 +52,169 @@ namespace RedGaintGames.CollectEM.Game.Designer
         [SerializeField] [Range(0.01f, 0.5f)] private float defaultSpawnStartScale = 0.1f;
         [SerializeField] [Range(0.01f, 0.5f)] private float defaultDespawnEndScale = 0.1f;
 
+        [Header("Control Buttons")]
+        [SerializeField] private Button saveButton;
+        [SerializeField] private Button resetButton;
+        [SerializeField] private TMP_Text savePathText; // New field for displaying the path
+
+        // Add to interface implementation
+        public float GravityMultiplier { get; private set; }
+        // Movement Settings Implementation
+        public float MovementCheckInterval { get; private set; }
+        public float ElementMoveDuration { get; private set; }
+        public float PositionUpdateThreshold { get; private set; }
+
+        // Spawning Settings Implementation
+        public float RespawnDelay { get; private set; }
+        public float DespawnDelay { get; private set; }
+
         // IGridElementSettings implementation
         public float SpawnAnimationDuration { get; private set; }
         public float DespawnAnimationDuration { get; private set; }
         public float SpawnStartScale { get; private set; }
         public float DespawnEndScale { get; private set; }
-   
+
         private void Awake()
         {
             InitializeMovementSettings();
             InitializeSpawningSettings();
             InitializeGravityControl();
             InitializeElementSettings();
+            InitializeButtons();
             
+            // Initialize path text
+            if (savePathText != null)
+            {
+                savePathText.text = "Settings will be saved to persistent data path";
+            }
         }
-      
+
+        private void InitializeButtons()
+        {
+            if (saveButton != null)
+            {
+                saveButton.onClick.AddListener(SaveSettingsToJson);
+            }
+
+            if (resetButton != null)
+            {
+                resetButton.onClick.AddListener(ResetAllSettings);
+            }
+        }
+
+        private void SaveSettingsToJson()
+        {
+            try
+            {
+                // Create a settings object to store all the values
+                var settings = new GridDesignerSettings
+                {
+                    movementCheckInterval = MovementCheckInterval,
+                    elementMoveDuration = ElementMoveDuration,
+                    positionUpdateThreshold = PositionUpdateThreshold,
+                    respawnDelay = RespawnDelay,
+                    despawnDelay = DespawnDelay,
+                    gravityMultiplier = GravityMultiplier,
+                    spawnAnimationDuration = SpawnAnimationDuration,
+                    despawnAnimationDuration = DespawnAnimationDuration,
+                    spawnStartScale = SpawnStartScale,
+                    despawnEndScale = DespawnEndScale
+                };
+
+                // Convert to JSON
+                string json = JsonUtility.ToJson(settings, true);
+                
+                // Define the file path
+                string filePath = Path.Combine(Application.persistentDataPath, "GridDesignerSettings.json");
+                
+                // Write to file
+                File.WriteAllText(filePath, json);
+                
+                Debug.Log($"Settings saved successfully to: {filePath}");
+                
+                // Update the path text
+                if (savePathText != null)
+                {
+                    savePathText.text = $"Settings saved to:\n{filePath}";
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to save settings: {e.Message}");
+                if (savePathText != null)
+                {
+                    savePathText.text = $"Save failed: {e.Message}";
+                }
+            }
+        }
+
+        private void ResetAllSettings()
+        {
+            // Reset movement settings
+            MovementCheckInterval = defaultCheckInterval;
+            ElementMoveDuration = defaultMoveDuration;
+            PositionUpdateThreshold = defaultPositionThreshold;
+            checkIntervalSlider.value = defaultCheckInterval;
+            moveDurationSlider.value = defaultMoveDuration;
+            positionThresholdSlider.value = defaultPositionThreshold;
+
+            // Reset spawning settings
+            RespawnDelay = defaultRespawnDelay;
+            DespawnDelay = defaultDespawnDelay;
+            respawnDelaySlider.value = defaultRespawnDelay;
+            despawnDelaySlider.value = defaultDespawnDelay;
+
+            // Reset gravity
+            GravityMultiplier = defaultGravityMultiplier;
+            gravityMultiplierSlider.value = defaultGravityMultiplier;
+
+            // Reset element settings
+            SpawnAnimationDuration = defaultSpawnDuration;
+            DespawnAnimationDuration = defaultDespawnDuration;
+            SpawnStartScale = defaultSpawnStartScale;
+            DespawnEndScale = defaultDespawnEndScale;
+            spawnDurationSlider.value = defaultSpawnDuration;
+            despawnDurationSlider.value = defaultDespawnDuration;
+            spawnStartScaleSlider.value = defaultSpawnStartScale;
+            despawnEndScaleSlider.value = defaultDespawnEndScale;
+
+            // Update all text displays
+            UpdateMovementText();
+            UpdateSpawningText();
+            UpdateElementText();
+            gravityMultiplierText.text = $"Gravity: {defaultGravityMultiplier:F1}x";
+            
+            // Reset path text
+            if (savePathText != null)
+            {
+                savePathText.text = "Settings will be saved to persistent data path";
+            }
+        }
+
+        [System.Serializable]
+        private class GridDesignerSettings
+        {
+            public float movementCheckInterval;
+            public float elementMoveDuration;
+            public float positionUpdateThreshold;
+            public float respawnDelay;
+            public float despawnDelay;
+            public float gravityMultiplier;
+            public float spawnAnimationDuration;
+            public float despawnAnimationDuration;
+            public float spawnStartScale;
+            public float despawnEndScale;
+        }
+        
 
         private void UpdateElementText()
         {
-            spawnDurationText.text = $"Spawn Duration: {defaultSpawnDuration:F2}s";
-            despawnDurationText.text = $"Despawn Duration: {defaultDespawnDuration:F2}s";
-            spawnStartScaleText.text = $"Spawn Start Scale: {defaultSpawnStartScale:F2}";
-            despawnEndScaleText.text = $"Despawn End Scale: {defaultDespawnEndScale:F2}";
+            spawnDurationText.text = $"Spawn Duration: {SpawnAnimationDuration:F2}s";
+            despawnDurationText.text = $"Despawn Duration: {DespawnAnimationDuration:F2}s";
+            spawnStartScaleText.text = $"Spawn Start Scale: {SpawnStartScale:F2}";
+            despawnEndScaleText.text = $"Despawn End Scale: {DespawnEndScale:F2}";
         }
-        
+
         private void InitializeElementSettings()
         {
             SpawnAnimationDuration = defaultSpawnDuration;
@@ -148,12 +278,11 @@ namespace RedGaintGames.CollectEM.Game.Designer
             UpdateMovementText();
         }
 
-        
         private void InitializeGravityControl()
         {
             GravityMultiplier = defaultGravityMultiplier;
             gravityMultiplierSlider.value = defaultGravityMultiplier;
-            
+
             gravityMultiplierSlider.onValueChanged.AddListener(value => {
                 GravityMultiplier = Mathf.Clamp(value, 0.1f, 5f); // Limit between 0.1x and 5x speed
                 gravityMultiplierText.text = $"Gravity: {value:F1}x";
@@ -161,6 +290,7 @@ namespace RedGaintGames.CollectEM.Game.Designer
 
             gravityMultiplierText.text = $"Gravity: {defaultGravityMultiplier:F1}x";
         }
+
         private void InitializeSpawningSettings()
         {
             RespawnDelay = defaultRespawnDelay;
@@ -184,15 +314,15 @@ namespace RedGaintGames.CollectEM.Game.Designer
 
         private void UpdateMovementText()
         {
-            checkIntervalText.text = $"Check Interval: {defaultCheckInterval:F3}s";
-            moveDurationText.text = $"Move Duration: {defaultMoveDuration:F3}s";
-            positionThresholdText.text = $"Position Threshold: {defaultPositionThreshold:F3}";
+            checkIntervalText.text = $"Check Interval: {MovementCheckInterval:F3}s";
+            moveDurationText.text = $"Move Duration: {ElementMoveDuration:F3}s";
+            positionThresholdText.text = $"Position Threshold: {PositionUpdateThreshold:F3}";
         }
 
         private void UpdateSpawningText()
         {
-            respawnDelayText.text = $"Respawn Delay: {defaultRespawnDelay:F3}s";
-            despawnDelayText.text = $"Despawn Delay: {defaultDespawnDelay:F3}s";
+            respawnDelayText.text = $"Respawn Delay: {RespawnDelay:F3}s";
+            despawnDelayText.text = $"Despawn Delay: {DespawnDelay:F3}s";
         }
 
         private void OnDestroy()
@@ -202,6 +332,16 @@ namespace RedGaintGames.CollectEM.Game.Designer
             positionThresholdSlider.onValueChanged.RemoveAllListeners();
             respawnDelaySlider.onValueChanged.RemoveAllListeners();
             despawnDelaySlider.onValueChanged.RemoveAllListeners();
+            spawnDurationSlider.onValueChanged.RemoveAllListeners();
+            despawnDurationSlider.onValueChanged.RemoveAllListeners();
+            spawnStartScaleSlider.onValueChanged.RemoveAllListeners();
+            despawnEndScaleSlider.onValueChanged.RemoveAllListeners();
+
+            if (saveButton != null)
+                saveButton.onClick.RemoveAllListeners();
+            
+            if (resetButton != null)
+                resetButton.onClick.RemoveAllListeners();
         }
     }
 }

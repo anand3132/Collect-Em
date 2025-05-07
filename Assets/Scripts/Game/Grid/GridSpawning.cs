@@ -26,7 +26,7 @@ namespace RedGaintGames.CollectEM.Game
         /// </summary>
         public IEnumerator RespawnElements()
         {
-            GameSFX.Instance.Play(GameSFX.Instance.SpawnClip);
+           // GameSFX.Instance.Play(GameSFX.Instance.SpawnClip);
             bool anyRespawned = false;
 
             foreach (GridElement element in grid.Elements)

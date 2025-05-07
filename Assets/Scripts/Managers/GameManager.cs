@@ -12,7 +12,7 @@ namespace RedGaintGames.CollectEM.Game
     {
         [Header("Game Configuration")]
         [SerializeField] public Grid grid;
-        [SerializeField] private int movesAvailable = 20;
+        [SerializeField] private int movesAvailable = 40;
         [SerializeField] private bool powerUpsEnabled = false;
         public GridDesignerUI GridDesignerUI;
         public static int Score { get; private set; }

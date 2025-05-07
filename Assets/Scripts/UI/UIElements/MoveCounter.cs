@@ -1,4 +1,6 @@
-﻿namespace RedGaintGames.CollectEM.Game
+﻿using TMPro;
+
+namespace RedGaintGames.CollectEM.Game
 {
     using UnityEngine;
     using UnityEngine.UI;
@@ -6,14 +8,14 @@
     /// <summary>
     /// UI Behaviour, displaying the number of moves left
     /// </summary>
-    [RequireComponent(typeof(Text))]
+    [RequireComponent(typeof(TextMeshProUGUI))]
     public class MoveCounter : MonoBehaviour
     {
-        private Text counterText = null;
+        private TextMeshProUGUI counterText = null;
 
         private void Awake()
         {
-            this.counterText = GetComponent<Text>();
+            this.counterText = GetComponent<TextMeshProUGUI>();
         }
 
         private void Start()
